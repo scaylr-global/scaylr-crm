@@ -146,7 +146,7 @@ function Card({ lead, dragging }: { lead: Lead; dragging?: boolean }) {
         <Pill>{lead.industry}</Pill>
         <div className="flex items-center gap-1.5 text-[11px] text-muted">
           {lead.assignee && <Avatar initials={lead.assignee.avatar_initials} color={lead.assignee.avatar_color} size={18} />}
-          {format(new Date(lead.created_at + 'Z'), 'MMM d')}
+          {format(new Date(lead.created_at), 'MMM d')}
         </div>
       </div>
     </div>

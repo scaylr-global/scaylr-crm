@@ -218,7 +218,7 @@ export default function Leads() {
                   ) : (
                     <span>Unassigned</span>
                   )}
-                  · {format(new Date(l.created_at + 'Z'), 'MMM d')}
+                  · {format(new Date(l.created_at), 'MMM d')}
                 </div>
               </div>
             </div>

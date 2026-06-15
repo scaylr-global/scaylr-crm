@@ -19,8 +19,8 @@ import targetRoutes from './routes/targets.js';
 import activityRoutes from './routes/activity.js';
 import dashboardRoutes from './routes/dashboard.js';
 
-// Seed default data on first run
-seedIfEmpty();
+// Seed default data on first run (await so the DB is ready before serving)
+await seedIfEmpty();
 
 const app = express();
 app.use(cors());

@@ -1,39 +1,91 @@
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// DB_PATH lets a host mount a persistent disk (e.g. /data/scaylr.db) so data
-// survives restarts/redeploys. Defaults to a local file for dev.
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'scaylr.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
-// Make sure the directory for the DB file exists (mounted disks may be empty).
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+// Two drivers, one Postgres dialect:
+//  - Production: `pg` connecting to DATABASE_URL (e.g. a free Neon database)
+//  - Local dev:  PGlite, an embedded in-process Postgres (no install needed),
+//                persisted to server/db/pgdata so data survives restarts.
+const USE_PG = !!process.env.DATABASE_URL;
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+let _query; // (text, params) => Promise<{ rows }>
+let _execScript; // (sql) => Promise<void>  (multi-statement, no params)
+let _tx; // (fn) => Promise<any>  where fn receives a query(text, params) fn
 
-// Apply schema (idempotent — uses IF NOT EXISTS)
-const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
-db.exec(schema);
-
-export default db;
-
-// Helper: write an activity log entry
-export function logActivity({ userId, actionType, description, leadId = null }) {
-  db.prepare(
-    `INSERT INTO activity_log (user_id, action_type, description, lead_id)
-     VALUES (?, ?, ?, ?)`
-  ).run(userId ?? null, actionType, description, leadId);
+if (USE_PG) {
+  const pgmod = await import('pg');
+  const { Pool } = pgmod.default;
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 5,
+  });
+  _query = (text, params = []) => pool.query(text, params);
+  _execScript = async (sql) => {
+    await pool.query(sql);
+  };
+  _tx = async (fn) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const r = await fn((t, p = []) => client.query(t, p));
+      await client.query('COMMIT');
+      return r;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  };
+  console.log('[db] Using PostgreSQL via DATABASE_URL');
+} else {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const dataDir = process.env.DB_PATH || path.join(__dirname, 'pgdata');
+  fs.mkdirSync(dataDir, { recursive: true });
+  const lite = new PGlite(dataDir);
+  await lite.waitReady;
+  _query = (text, params = []) => lite.query(text, params);
+  _execScript = (sql) => lite.exec(sql);
+  _tx = (fn) => lite.transaction((tx) => fn((t, p = []) => tx.query(t, p)));
+  console.log('[db] Using embedded PGlite at', dataDir);
 }
 
-// Helper: today's date as YYYY-MM-DD (local)
+// Apply schema (idempotent — IF NOT EXISTS everywhere).
+await _execScript(fs.readFileSync(SCHEMA_PATH, 'utf-8'));
+
+// ---- Query helpers ----
+export async function q(text, params = []) {
+  const r = await _query(text, params);
+  return r.rows;
+}
+export async function q1(text, params = []) {
+  const r = await _query(text, params);
+  return r.rows[0] || null;
+}
+export async function run(text, params = []) {
+  return _query(text, params);
+}
+export const tx = _tx;
+
+// Write an activity log entry.
+export async function logActivity({ userId, actionType, description, leadId = null }) {
+  await _query(
+    `INSERT INTO activity_log (user_id, action_type, description, lead_id)
+     VALUES ($1, $2, $3, $4)`,
+    [userId ?? null, actionType, description, leadId]
+  );
+}
+
+// Today's date as YYYY-MM-DD (local).
 export function today() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
     d.getDate()
   ).padStart(2, '0')}`;
 }
+
+export default { q, q1, run, tx, logActivity, today };

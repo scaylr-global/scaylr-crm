@@ -128,11 +128,11 @@ export default function LeadDetail() {
               <Building2 size={15} /> {lead.company || '—'}
             </div>
             <div className="text-xs text-muted mt-4 space-y-1 border-t border-border pt-3">
-              <div>Added {format(new Date(lead.created_at + 'Z'), 'MMM d, yyyy')}</div>
+              <div>Added {format(new Date(lead.created_at), 'MMM d, yyyy')}</div>
               <div>
                 Last contact{' '}
                 {lead.last_contact_at
-                  ? format(new Date(lead.last_contact_at + 'Z'), 'MMM d, yyyy')
+                  ? format(new Date(lead.last_contact_at), 'MMM d, yyyy')
                   : 'never'}
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function LeadDetail() {
                     <div className="flex-1 min-w-0">
                       {c.notes && <div className="text-sm">{c.notes}</div>}
                       <div className="text-xs text-muted mt-0.5">
-                        {fmtDur(c.duration_seconds)} · {format(new Date(c.created_at + 'Z'), 'MMM d, yyyy · h:mm a')}
+                        {fmtDur(c.duration_seconds)} · {format(new Date(c.created_at), 'MMM d, yyyy · h:mm a')}
                         {c.logger?.name && ` · ${c.logger.name}`}
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export default function LeadDetail() {
                       <div className="flex-1">
                         <div className={`text-sm ${done ? 'line-through text-muted' : ''}`}>{f.note}</div>
                         <div className="text-xs text-muted mt-0.5">
-                          {format(new Date(f.scheduled_at + 'Z'), 'MMM d, yyyy · h:mm a')}
+                          {format(new Date(f.scheduled_at), 'MMM d, yyyy · h:mm a')}
                           {done && f.completed_at && ' · completed'}
                         </div>
                       </div>
@@ -363,9 +363,9 @@ function ScheduleModal({ leadId, onClose, onDone }: { leadId: number; onClose: (
     if (!date || !time) return toast('Pick a date and time', 'error');
     setBusy(true);
     try {
-      // Convert local wall-clock to UTC "YYYY-MM-DD HH:MM:SS" so the server's
-      // datetime('now') (UTC) overdue comparison is consistent with display.
-      const utc = new Date(`${date}T${time}:00`).toISOString().slice(0, 19).replace('T', ' ');
+      // Send a full ISO-8601 instant (UTC, with Z) so Postgres stores the exact
+      // moment unambiguously and overdue comparisons stay correct.
+      const utc = new Date(`${date}T${time}:00`).toISOString();
       await api.post('/followups', {
         lead_id: leadId,
         scheduled_at: utc,

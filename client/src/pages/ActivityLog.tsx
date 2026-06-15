@@ -108,7 +108,7 @@ export default function ActivityLog() {
                         ·{' '}
                       </>
                     )}
-                    {format(new Date(a.created_at + 'Z'), 'MMM d, yyyy · h:mm a')}
+                    {format(new Date(a.created_at), 'MMM d, yyyy · h:mm a')}
                   </div>
                 </div>
                 {a.avatar_initials && (
@@ -118,7 +118,7 @@ export default function ActivityLog() {
                   </div>
                 )}
                 <div className="text-xs text-muted shrink-0 w-24 text-right">
-                  {formatDistanceToNow(new Date(a.created_at + 'Z'), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
                 </div>
               </div>
             );
