@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0a0a0f;
+  color: #ffffff;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a3e;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  background: #0a0a0f;
+  border: 1px solid #1e1e2e;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+  width: 100%;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #14b8a6;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #475569;
+}
+select option {
+  background: #111118;
+}
+
+@layer components {
+  .card {
+    @apply bg-card border border-border rounded-xl;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors;
+  }
+  .btn-teal {
+    @apply bg-teal text-black hover:bg-teal/90;
+  }
+  .btn-ghost {
+    @apply bg-transparent border border-border text-muted hover:text-white hover:border-teal/50;
+  }
+  .btn-danger {
+    @apply bg-red-500/15 text-red-400 hover:bg-red-500/25;
+  }
+}

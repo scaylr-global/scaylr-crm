@@ -1,0 +1,26 @@
+# Render.com Blueprint — deploys Scaylr CRM as one always-on web service.
+# The service builds the React client and serves it from the Express API on a
+# single origin, with a 1 GB persistent disk so the SQLite data is never lost.
+#
+# Note: the persistent disk requires a paid instance (Starter ~$7/mo). Without a
+# disk, a hosted SQLite file is wiped on every restart/redeploy — not acceptable
+# for real CRM data — so the disk is included here on purpose.
+services:
+  - type: web
+    name: scaylr-crm
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm run build:deploy
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong random secret for you
+      - key: DB_PATH
+        value: /data/scaylr.db
+    disk:
+      name: scaylr-data
+      mountPath: /data
+      sizeGB: 1

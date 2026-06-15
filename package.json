@@ -1,0 +1,15 @@
+{
+  "name": "scaylr-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scaylr CRM — lead management for sales teams",
+  "scripts": {
+    "dev": "npm --prefix client run dev",
+    "server": "npm --prefix server run server",
+    "seed": "npm --prefix server run seed",
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "build:deploy": "npm --prefix server install && npm --prefix client install && npm --prefix client run build",
+    "start": "node server/index.js"
+  }
+}
