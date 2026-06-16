@@ -54,12 +54,24 @@ router.get('/', (req, res) => {
     )
     .all();
 
+  // Stale leads (silent >= 7 days, active only, top 5 by days_silent desc then value desc)
+  const staleLeads = db
+    .prepare(
+      `SELECT id, name, company, status, value, days_silent, is_hot
+       FROM leads_enriched
+       WHERE status NOT IN ('Closed','Lost') AND days_silent >= 7
+       ORDER BY days_silent DESC, value DESC NULLS LAST
+       LIMIT 5`
+    )
+    .all();
+
   res.json({
     stats: { totalLeads, conversionRate, totalCalls, overdue },
     outcomes,
     team: members,
     overdueList,
     recentCalls,
+    staleLeads,
   });
 });
 

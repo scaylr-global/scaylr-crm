@@ -2,79 +2,229 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
   color-scheme: dark;
+
+  /* Surfaces — cool charcoal, depth from elevation not shadows */
+  --bg:           #0B0F12;
+  --surface:      #12171C;
+  --surface-2:    #1A2127;
+  --border:       rgba(255,255,255,0.07);
+  --border-strong:rgba(255,255,255,0.12);
+
+  /* Text */
+  --text:         #E8EDF1;
+  --text-muted:   #8A97A3;
+  --text-faint:   #5B6670;
+
+  /* Accent — Scaylr teal, used with restraint */
+  --accent:       #1FB8A6;
+  --accent-hover: #28CDB9;
+  --accent-glow:  rgba(31,184,166,0.25);
+
+  /* Status — desaturated so teal stays the hero */
+  --success:  #3FB984;
+  --warning:  #E0A23C;
+  --danger:   #E0574B;
+  --info:     #4C8BD6;
+
+  /* Radius */
+  --r-sm: 6px;  --r-md: 10px;  --r-lg: 14px;
+
+  /* Spacing (4px grid) */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px;
+  --s-5:24px; --s-6:32px; --s-8:48px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;  --dur-base: 220ms;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+/* ── Base ───────────────────────────────────────────────────────────────── */
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
-  background: #0a0a0f;
-  color: #ffffff;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #0a0a0f;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e1e2e;
-  border-radius: 6px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #2a2a3e;
-}
+/* Tabular figures on all numeric content */
+.tabular { font-variant-numeric: tabular-nums; }
 
-/* Inputs */
-input,
-select,
-textarea {
-  background: #0a0a0f;
-  border: 1px solid #1e1e2e;
-  color: #fff;
-  border-radius: 8px;
-  padding: 8px 12px;
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--r-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Form controls ──────────────────────────────────────────────────────── */
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: var(--r-md);
+  padding: var(--s-2) var(--s-3);
   outline: none;
   width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color var(--dur-fast);
 }
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: #14b8a6;
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
-input::placeholder,
-textarea::placeholder {
-  color: #475569;
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+select option { background: var(--surface); }
+
+/* ── Sheet (slide-over drawer) animations ────────────────────────────────── */
+@keyframes sheet-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
-select option {
-  background: #111118;
+@keyframes sheet-out {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+@keyframes overlay-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlay-out { from { opacity: 1; } to { opacity: 0; } }
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(11,15,18,0.65);
+  backdrop-filter: blur(2px);
+}
+.sheet-overlay[data-state="open"]   { animation: overlay-in  160ms ease forwards; }
+.sheet-overlay[data-state="closed"] { animation: overlay-out 160ms ease forwards; }
+
+.sheet-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  z-index: 50;
+  width: clamp(380px, 32vw, 520px);
+  background: var(--surface-2);
+  border-left: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sheet-panel[data-state="open"]   { animation: sheet-in  var(--dur-base) var(--ease-out) forwards; }
+.sheet-panel[data-state="closed"] { animation: sheet-out var(--dur-base) var(--ease-out) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel[data-state="open"]   { animation: overlay-in  var(--dur-base) ease forwards; }
+  .sheet-panel[data-state="closed"] { animation: overlay-out var(--dur-base) ease forwards; }
 }
 
+/* ── Component primitives ───────────────────────────────────────────────── */
 @layer components {
+  /* Card */
   .card {
-    @apply bg-card border border-border rounded-xl;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    transition: background var(--dur-fast), border-color var(--dur-fast);
   }
+  .card-hover:hover {
+    background: var(--surface-2);
+    border-color: var(--border-strong);
+  }
+
+  /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    border-radius: var(--r-md);
+    padding: var(--s-2) var(--s-3);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
+    white-space: nowrap;
   }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0B0F12;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+  /* alias for existing .btn-teal usage */
   .btn-teal {
-    @apply bg-teal text-black hover:bg-teal/90;
+    background: var(--accent);
+    color: #0B0F12;
   }
+  .btn-teal:hover:not(:disabled) { background: var(--accent-hover); }
+
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+  }
+
+  /* alias for existing .btn-ghost usage */
   .btn-ghost {
-    @apply bg-transparent border border-border text-muted hover:text-white hover:border-teal/50;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
   }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
   .btn-danger {
-    @apply bg-red-500/15 text-red-400 hover:bg-red-500/25;
+    background: rgba(224,87,75,0.12);
+    color: var(--danger);
+    border: 1px solid rgba(224,87,75,0.2);
+  }
+  .btn-danger:hover:not(:disabled) { background: rgba(224,87,75,0.22); }
+
+  /* Focus ring for all interactive elements */
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-glow);
   }
 }
+
+/* ── Typography helpers ─────────────────────────────────────────────────── */
+.label-xs {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.metric {
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.text-muted { color: var(--text-muted); }
+.text-faint { color: var(--text-faint); }

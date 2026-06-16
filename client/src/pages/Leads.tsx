@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Upload, Search, Building2, Phone, Mail, UserCheck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Plus, Upload, Search, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { api, Lead, User } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { can, INDUSTRIES, ALL_STATUSES } from '../lib/constants';
-import { StatusBadge, Pill, Avatar, Modal, Empty, Field } from '../components/ui';
+import { StatusBadge, Pill, Avatar, Modal, Empty, Field, ScoreChip, DaysBadge } from '../components/ui';
+import { Sheet } from '../components/sheet';
 import LeadForm, { LeadFormValues } from '../components/LeadForm';
+import LeadDetail from './LeadDetail';
 
 export default function Leads() {
   const { user } = useAuth();
   const toast = useToast();
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -26,6 +28,16 @@ export default function Leads() {
   const [showImport, setShowImport] = useState(false);
   const [reassignTo, setReassignTo] = useState('');
 
+  // Drawer state — driven by ?lead=:id query param for deep-link support
+  const drawerLeadId = searchParams.get('lead') ? Number(searchParams.get('lead')) : null;
+
+  function openDrawer(id: number) {
+    setSearchParams({ lead: String(id) }, { replace: true });
+  }
+  function closeDrawer() {
+    setSearchParams({}, { replace: true });
+  }
+
   function load() {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -36,9 +48,7 @@ export default function Leads() {
     api.get<Lead[]>(`/leads?${params}`).then(setLeads);
   }
 
-  useEffect(() => {
-    api.get<User[]>('/users').then(setUsers);
-  }, []);
+  useEffect(() => { api.get<User[]>('/users').then(setUsers); }, []);
   useEffect(() => {
     const t = setTimeout(load, 200);
     return () => clearTimeout(t);
@@ -80,173 +90,224 @@ export default function Leads() {
 
   return (
     <div>
+      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-[24px] font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
           Leads
-          <span className="text-sm bg-white/10 text-muted px-2 py-0.5 rounded-full">{leads.length}</span>
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/5 tabular" style={{ color: 'var(--text-muted)' }}>
+            {leads.length}
+          </span>
         </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMine((m) => !m)}
-            className={`btn ${mine ? 'btn-teal' : 'btn-ghost'}`}
+            className={`btn ${mine ? 'btn-primary' : 'btn-ghost'}`}
           >
-            <UserCheck size={16} /> My Leads
+            <UserCheck size={15} /> My Leads
           </button>
           {can(user?.role, 'csvImport') && (
             <button onClick={() => setShowImport(true)} className="btn btn-ghost">
-              <Upload size={16} /> Import CSV
+              <Upload size={15} /> Import CSV
             </button>
           )}
-          <button onClick={() => setShowAdd(true)} className="btn btn-teal">
-            <Plus size={16} /> Add Lead
+          <button onClick={() => setShowAdd(true)} className="btn btn-primary">
+            <Plus size={15} /> Add Lead
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            className="pl-9"
-            placeholder="Search name, company, phone…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* ── Filters ── */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
+          <input className="pl-9 text-sm" placeholder="Search name, company, phone…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <select className="w-auto" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+        <select className="w-auto text-sm" value={industry} onChange={(e) => setIndustry(e.target.value)}>
           <option value="all">All Industries</option>
-          {INDUSTRIES.map((i) => (
-            <option key={i}>{i}</option>
-          ))}
+          {INDUSTRIES.map((i) => <option key={i}>{i}</option>)}
         </select>
-        <select className="w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select className="w-auto text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">All Statuses</option>
-          {ALL_STATUSES.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
+          {ALL_STATUSES.map((s) => <option key={s}>{s}</option>)}
         </select>
-        <select className="w-auto" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+        <select className="w-auto text-sm" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
           <option value="all">All Assignees</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>
 
-      {/* Bulk bar */}
-      <div className="flex items-center gap-3 mb-4 text-sm">
-        <label className="flex items-center gap-2 text-muted cursor-pointer">
-          <input type="checkbox" className="w-4 h-4 accent-teal" checked={allSelected} onChange={toggleAll} />
-          Select all
-        </label>
-        {selected.size > 0 && canBulk && (
-          <div className="flex items-center gap-2">
-            <span className="text-teal">{selected.size} selected</span>
-            <select className="w-auto" value={reassignTo} onChange={(e) => setReassignTo(e.target.value)}>
-              <option value="">Unassign</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-            <button onClick={bulkReassign} className="btn btn-teal py-1">
-              Reassign
-            </button>
-          </div>
-        )}
-        {selected.size > 0 && !canBulk && <span className="text-xs text-muted">(Bulk reassign requires manager role)</span>}
-      </div>
-
-      {leads.length === 0 ? (
-        <Empty>No leads match your filters.</Empty>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {leads.map((l) => (
-            <div
-              key={l.id}
-              className="card p-4 hover:border-teal/40 cursor-pointer transition-colors relative"
-              onClick={() => navigate(`/leads/${l.id}`)}
-            >
-              <input
-                type="checkbox"
-                className="absolute top-4 left-4 w-4 h-4 accent-teal"
-                checked={selected.has(l.id)}
-                onChange={() => toggle(l.id)}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="flex items-start justify-between mb-2 pl-7">
-                <div>
-                  <div className="font-semibold">{l.name}</div>
-                  {l.role_title && <div className="text-xs text-muted">{l.role_title}</div>}
-                </div>
-                <StatusBadge status={l.status} />
-              </div>
-              <div className="space-y-1.5 text-sm text-muted">
-                {l.company && (
-                  <div className="flex items-center gap-2">
-                    <Building2 size={14} /> {l.company}
-                  </div>
-                )}
-                {l.phone1 && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={14} /> {l.phone1}
-                  </div>
-                )}
-                {l.phone2 && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={14} className="opacity-50" /> {l.phone2}
-                  </div>
-                )}
-                {l.email && (
-                  <div className="flex items-center gap-2 truncate">
-                    <Mail size={14} /> {l.email}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <Pill>{l.industry}</Pill>
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  {l.assignee ? (
-                    <>
-                      <Avatar initials={l.assignee.avatar_initials} color={l.assignee.avatar_color} size={20} />
-                      <span>{l.assignee.name.split(' ')[0]}</span>
-                    </>
-                  ) : (
-                    <span>Unassigned</span>
-                  )}
-                  · {format(new Date(l.created_at + 'Z'), 'MMM d')}
-                </div>
-              </div>
+      {/* ── Bulk bar ── */}
+      {(canBulk || selected.size > 0) && (
+        <div className="flex items-center gap-3 mb-3 text-sm">
+          <label className="flex items-center gap-2 cursor-pointer" style={{ color: 'var(--text-muted)' }}>
+            <input type="checkbox" className="w-4 h-4 accent-[#1FB8A6]" checked={allSelected} onChange={toggleAll} />
+            Select all
+          </label>
+          {selected.size > 0 && canBulk && (
+            <div className="flex items-center gap-2">
+              <span style={{ color: 'var(--accent)' }}>{selected.size} selected</span>
+              <select className="w-auto text-sm" value={reassignTo} onChange={(e) => setReassignTo(e.target.value)}>
+                <option value="">Unassign</option>
+                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+              <button onClick={bulkReassign} className="btn btn-primary py-1">Reassign</button>
             </div>
-          ))}
+          )}
+          {selected.size > 0 && !canBulk && (
+            <span className="text-xs" style={{ color: 'var(--text-faint)' }}>Bulk reassign requires manager role</span>
+          )}
         </div>
       )}
 
+      {/* ── Table ── */}
+      {leads.length === 0 ? (
+        <Empty>No leads match your filters.</Empty>
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-strong)' }}>
+                <th className="w-10 pl-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-[#1FB8A6]"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </th>
+                <Th>Lead</Th>
+                <Th>Company</Th>
+                <Th>Phone</Th>
+                <Th>Status</Th>
+                <Th right>Score</Th>
+                <Th right>Silent</Th>
+                <Th>Assignee</Th>
+                <Th right>Added</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {leads.map((l, i) => (
+                <tr
+                  key={l.id}
+                  onClick={() => openDrawer(l.id)}
+                  className="group cursor-pointer transition-colors duration-fast"
+                  style={{
+                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                    background: drawerLeadId === l.id ? 'var(--surface-2)' : undefined,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (drawerLeadId !== l.id)
+                      (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (drawerLeadId !== l.id)
+                      (e.currentTarget as HTMLElement).style.background = '';
+                  }}
+                >
+                  <td className="pl-4 py-3 w-10" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-[#1FB8A6]"
+                      checked={selected.has(l.id)}
+                      onChange={() => toggle(l.id)}
+                    />
+                  </td>
+                  <td className="py-3 pr-4 min-w-[160px]">
+                    <div className="font-medium text-sm leading-snug" style={{ color: 'var(--text)' }}>{l.name}</div>
+                    {l.role_title && <div className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>{l.role_title}</div>}
+                  </td>
+                  <td className="py-3 pr-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {l.company || <span style={{ color: 'var(--text-faint)' }}>—</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-sm tabular whitespace-nowrap" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                    {l.phone1 || <span style={{ color: 'var(--text-faint)' }}>—</span>}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <StatusBadge status={l.status} />
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    {l.score !== undefined ? (
+                      <ScoreChip score={l.score} winPct={l.win_pct ?? 0} temperature={l.temperature} />
+                    ) : <span style={{ color: 'var(--text-faint)' }}>—</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    {(l.days_silent ?? 0) >= 7
+                      ? <DaysBadge days={l.days_silent!} />
+                      : <span className="text-xs tabular" style={{ color: 'var(--text-faint)' }}>—</span>}
+                  </td>
+                  <td className="py-3 pr-4">
+                    {l.assignee ? (
+                      <div className="flex items-center gap-1.5">
+                        <Avatar initials={l.assignee.avatar_initials} color={l.assignee.avatar_color} size={22} />
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{l.assignee.name.split(' ')[0]}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--text-faint)' }}>—</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-right text-xs tabular whitespace-nowrap" style={{ color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
+                    {format(new Date(l.created_at + 'Z'), 'MMM d')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Lead detail drawer ── */}
+      <Sheet
+        open={drawerLeadId !== null}
+        onClose={closeDrawer}
+        label="Lead Details"
+      >
+        {drawerLeadId !== null && (
+          <LeadDetail
+            isDrawer
+            drawerLeadId={drawerLeadId}
+            onDrawerRefreshList={load}
+          />
+        )}
+      </Sheet>
+
+      {/* ── Modals ── */}
       {showAdd && (
         <Modal title="Add Lead" onClose={() => setShowAdd(false)} wide>
           <LeadForm users={users} onSubmit={addLead} onCancel={() => setShowAdd(false)} submitLabel="Add Lead" />
         </Modal>
       )}
-
       {showImport && (
         <CsvImport
           users={users}
           onClose={() => setShowImport(false)}
-          onDone={() => {
-            setShowImport(false);
-            load();
-          }}
+          onDone={() => { setShowImport(false); load(); }}
         />
       )}
     </div>
   );
 }
 
-// ---- CSV Import ----
+// ── Table header cell ─────────────────────────────────────────────────────────
+function Th({ children, right }: { children?: React.ReactNode; right?: boolean }) {
+  return (
+    <th
+      className="py-3 pr-4 text-left"
+      style={{
+        fontSize: '11px',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--text-faint)',
+        textAlign: right ? 'right' : 'left',
+      }}
+    >
+      {children}
+    </th>
+  );
+}
+
+// ── CSV Import modal ──────────────────────────────────────────────────────────
 function CsvImport({ users, onClose, onDone }: { users: User[]; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -285,30 +346,27 @@ function CsvImport({ users, onClose, onDone }: { users: User[]; onClose: () => v
 
   return (
     <Modal title="Import Leads from CSV" onClose={onClose} wide>
-      <p className="text-sm text-muted mb-3">
-        Columns supported: <code className="text-teal">name, role_title, company, phone1, phone2, email, industry, status</code>.
-        Only <code>name</code> is required.
+      <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        Columns supported: <code className="text-sm" style={{ color: 'var(--accent)' }}>name, role_title, company, phone1, phone2, email, industry, status</code>.
+        Only <code style={{ color: 'var(--accent)' }}>name</code> is required.
       </p>
       <input ref={fileRef} type="file" accept=".csv" onChange={onFile} />
-      {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
-
+      {error && <p className="text-sm mt-2" style={{ color: 'var(--danger)' }}>{error}</p>}
       {rows.length > 0 && (
         <>
-          <div className="mt-4 text-sm text-muted">Preview ({rows.length} rows):</div>
-          <div className="mt-2 max-h-64 overflow-auto border border-border rounded-lg">
+          <div className="mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>Preview ({rows.length} rows):</div>
+          <div className="mt-2 max-h-64 overflow-auto rounded-[var(--r-md)]" style={{ border: '1px solid var(--border)' }}>
             <table className="w-full text-xs">
-              <thead className="bg-white/5 sticky top-0">
+              <thead style={{ background: 'var(--surface-2)', position: 'sticky', top: 0 }}>
                 <tr>
                   {['name', 'company', 'phone1', 'email', 'industry', 'status'].map((h) => (
-                    <th key={h} className="text-left px-3 py-2 text-muted font-medium">
-                      {h}
-                    </th>
+                    <th key={h} className="text-left px-3 py-2 label-xs">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.slice(0, 50).map((r, i) => (
-                  <tr key={i} className="border-t border-border">
+                  <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
                     <td className="px-3 py-1.5">{r.name}</td>
                     <td className="px-3 py-1.5">{r.company}</td>
                     <td className="px-3 py-1.5">{r.phone1}</td>
@@ -321,12 +379,8 @@ function CsvImport({ users, onClose, onDone }: { users: User[]; onClose: () => v
             </table>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <button onClick={onClose} className="btn btn-ghost">
-              Cancel
-            </button>
-            <button onClick={confirmImport} className="btn btn-teal">
-              Import {rows.length} Leads
-            </button>
+            <button onClick={onClose} className="btn btn-ghost">Cancel</button>
+            <button onClick={confirmImport} className="btn btn-primary">Import {rows.length} Leads</button>
           </div>
         </>
       )}
@@ -336,19 +390,12 @@ function CsvImport({ users, onClose, onDone }: { users: User[]; onClose: () => v
 
 function splitCsv(line: string): string[] {
   const out: string[] = [];
-  let cur = '';
-  let inQ = false;
+  let cur = ''; let inQ = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (c === '"') {
-      if (inQ && line[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else inQ = !inQ;
-    } else if (c === ',' && !inQ) {
-      out.push(cur);
-      cur = '';
-    } else cur += c;
+    if (c === '"') { if (inQ && line[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+    else cur += c;
   }
   out.push(cur);
   return out;

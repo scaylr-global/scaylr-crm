@@ -37,19 +37,22 @@ router.get('/', (req, res) => {
 
 // POST /api/calls
 router.post('/', (req, res) => {
-  const { lead_id, outcome, duration_seconds, notes } = req.body || {};
+  const { lead_id, outcome, duration_seconds, notes, type, talking_points, pain_points, objections, next_step } = req.body || {};
   if (!lead_id || !VALID_OUTCOMES.includes(outcome)) {
     return res.status(400).json({ error: 'Lead and a valid outcome are required' });
   }
   const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(lead_id);
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
+  const callType = ['Phone Call','WhatsApp','Meeting','Email','Note'].includes(type) ? type : 'Phone Call';
   const info = db
     .prepare(
-      `INSERT INTO call_logs (lead_id, logged_by, outcome, duration_seconds, notes)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO call_logs (lead_id, logged_by, outcome, type, duration_seconds, notes,
+         talking_points, pain_points, objections, next_step)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(lead_id, req.user.id, outcome, Number(duration_seconds) || 0, notes || null);
+    .run(lead_id, req.user.id, outcome, callType, Number(duration_seconds) || 0, notes || null,
+      talking_points || null, pain_points || null, objections || null, next_step || null);
 
   db.prepare("UPDATE leads SET last_contact_at = datetime('now') WHERE id = ?").run(lead_id);
 

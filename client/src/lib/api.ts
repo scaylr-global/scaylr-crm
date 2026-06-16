@@ -79,6 +79,18 @@ export interface Lead {
   created_at: string;
   last_contact_at: string | null;
   notes: string | null;
+  // Sales Intelligence Layer
+  value?: number | null;
+  is_hot?: number;
+  converted_package?: string | null;
+  converted_mrr?: number | null;
+  lost_reason?: string | null;
+  // Enriched (from leads_enriched view + scoring)
+  last_touch_at?: string | null;
+  days_silent?: number;
+  score?: number;
+  temperature?: 'Hot' | 'Warm' | 'Cold';
+  win_pct?: number;
 }
 
 export interface CallLog {
@@ -86,13 +98,34 @@ export interface CallLog {
   lead_id: number;
   logged_by: number;
   outcome: string;
+  type?: string;
   duration_seconds: number;
   notes: string | null;
+  talking_points?: string | null;
+  pain_points?: string | null;
+  objections?: string | null;
+  next_step?: string | null;
   created_at: string;
   lead_name?: string;
   lead_company?: string;
   logger_name?: string;
   logger?: { name: string };
+}
+
+export interface CallPrep {
+  lastInteraction: { date: string; outcome: string; type: string | null; notes: string | null } | null;
+  talkingPoints: string | null;
+  painPoints: string | null;
+  objections: string | null;
+  nextStep: string | null;
+  totalCalls: number;
+}
+
+export interface Intel {
+  allPainPoints: { text: string; date: string; type: string | null }[];
+  allObjections: { text: string; date: string; type: string | null }[];
+  allNextSteps: { text: string; date: string }[];
+  outcomeHistory: { date: string; outcome: string; type: string | null }[];
 }
 
 export interface FollowUp {

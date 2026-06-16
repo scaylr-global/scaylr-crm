@@ -13,6 +13,7 @@ export interface LeadFormValues {
   industry: string;
   status: string;
   assigned_to: number | null;
+  value: string;
 }
 
 export default function LeadForm({
@@ -38,6 +39,7 @@ export default function LeadForm({
     industry: initial?.industry || 'Other',
     status: initial?.status || 'New',
     assigned_to: initial?.assigned_to ?? null,
+    value: initial?.value != null ? String(initial.value) : '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -96,6 +98,16 @@ export default function LeadForm({
               <option key={s}>{s}</option>
             ))}
           </select>
+        </Field>
+        <Field label="Deal Value (LKR)">
+          <input
+            type="number"
+            min={0}
+            step={1000}
+            placeholder="e.g. 150000"
+            value={v.value}
+            onChange={(e) => set('value', e.target.value)}
+          />
         </Field>
         <div className="col-span-2">
           <Field label="Assign to">

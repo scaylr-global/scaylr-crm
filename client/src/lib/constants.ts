@@ -1,12 +1,12 @@
-// Status badge colors (text + bg tint)
+// Status badge styles — aligned with token palette
 export const STATUS_STYLES: Record<string, { dot: string; cls: string }> = {
-  New: { dot: '#3b82f6', cls: 'text-blue-400 bg-blue-500/15' },
-  Contacted: { dot: '#a855f7', cls: 'text-purple-400 bg-purple-500/15' },
-  'Call Again': { dot: '#f97316', cls: 'text-orange-400 bg-orange-500/15' },
-  'Follow-up': { dot: '#eab308', cls: 'text-yellow-400 bg-yellow-500/15' },
-  Qualified: { dot: '#22c55e', cls: 'text-green-400 bg-green-500/15' },
-  Closed: { dot: '#15803d', cls: 'text-green-500 bg-green-700/20' },
-  Lost: { dot: '#ef4444', cls: 'text-red-400 bg-red-500/15' },
+  New:          { dot: '#4C8BD6', cls: 'text-[#4C8BD6] bg-[#4C8BD6]/15' },
+  Contacted:    { dot: '#9A6CF0', cls: 'text-[#9A6CF0] bg-[#9A6CF0]/15' },
+  'Call Again': { dot: '#E0A23C', cls: 'text-[#E0A23C] bg-[#E0A23C]/15' },
+  'Follow-up':  { dot: '#eab308', cls: 'text-yellow-400 bg-yellow-500/15' },
+  Qualified:    { dot: '#3FB984', cls: 'text-[#3FB984] bg-[#3FB984]/15' },
+  Closed:       { dot: '#1FB8A6', cls: 'text-[#1FB8A6] bg-[#1FB8A6]/15' },
+  Lost:         { dot: '#E0574B', cls: 'text-[#E0574B] bg-[#E0574B]/15' },
 };
 
 export const PIPELINE_ORDER = [
@@ -29,14 +29,14 @@ export const ALL_STATUSES = [
   'Lost',
 ];
 
-// Call outcome colors
+// Outcome colors — also used by Recharts Cell fill
 export const OUTCOME_STYLES: Record<string, { color: string; cls: string }> = {
-  Interested: { color: '#22c55e', cls: 'text-green-400 bg-green-500/15' },
-  Converted: { color: '#3b82f6', cls: 'text-blue-400 bg-blue-500/15' },
-  Callback: { color: '#eab308', cls: 'text-yellow-400 bg-yellow-500/15' },
-  'No Answer': { color: '#94a3b8', cls: 'text-slate-400 bg-slate-500/15' },
-  'Not Interested': { color: '#ef4444', cls: 'text-red-400 bg-red-500/15' },
-  'Wrong Number': { color: '#64748b', cls: 'text-slate-400 bg-slate-600/20' },
+  Interested:      { color: '#3FB984', cls: 'text-[#3FB984] bg-[#3FB984]/15' },
+  Converted:       { color: '#1FB8A6', cls: 'text-[#1FB8A6] bg-[#1FB8A6]/15' },
+  Callback:        { color: '#E0A23C', cls: 'text-[#E0A23C] bg-[#E0A23C]/15' },
+  'No Answer':     { color: '#5B6670', cls: 'text-[#8A97A3] bg-white/5' },
+  'Not Interested':{ color: '#E0574B', cls: 'text-[#E0574B] bg-[#E0574B]/15' },
+  'Wrong Number':  { color: '#3d4850', cls: 'text-[#5B6670] bg-white/5' },
 };
 
 export const OUTCOMES = [
@@ -49,6 +49,14 @@ export const OUTCOMES = [
 ];
 
 export const INDUSTRIES = ['Vehicle', 'Food', 'Service', 'Technology', 'Other'];
+
+export const ACTIVITY_TYPES = ['Phone Call', 'WhatsApp', 'Meeting', 'Email', 'Note'];
+
+export const TEMP_STYLES: Record<string, { cls: string; dot: string; label: string }> = {
+  Hot: { cls: 'text-red-400 bg-red-500/15 border border-red-500/30', dot: '#ef4444', label: '🔥 Hot' },
+  Warm: { cls: 'text-amber-400 bg-amber-500/15 border border-amber-500/30', dot: '#f59e0b', label: '☀️ Warm' },
+  Cold: { cls: 'text-blue-400 bg-blue-500/15 border border-blue-500/30', dot: '#3b82f6', label: '❄️ Cold' },
+};
 
 // Permission matrix (mirror of server). Per-lead edit handled separately.
 export const PERMISSIONS: Record<string, string[]> = {

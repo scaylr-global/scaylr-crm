@@ -11,11 +11,11 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { Users, TrendingUp, PhoneCall, AlertTriangle } from 'lucide-react';
+import { Users, TrendingUp, PhoneCall, AlertTriangle, Clock } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { api } from '../lib/api';
 import { OUTCOME_STYLES } from '../lib/constants';
-import { StatCard, OutcomeBadge, Avatar, Empty } from '../components/ui';
+import { StatCard, OutcomeBadge, Avatar, Empty, DaysBadge, StatusBadge } from '../components/ui';
 
 export default function Dashboard() {
   const [data, setData] = useState<any>(null);
@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   if (!data) return <div className="text-muted">Loading…</div>;
 
-  const { stats, outcomes, team, overdueList, recentCalls } = data;
+  const { stats, outcomes, team, overdueList, recentCalls, staleLeads } = data;
   const totalOutcomes = outcomes.reduce((s: number, o: any) => s + o.count, 0) || 1;
   const pieData = outcomes.filter((o: any) => o.count > 0);
 
@@ -129,6 +129,42 @@ export default function Dashboard() {
             );
           })}
         </div>
+      </div>
+
+      {/* Needs Follow-up (stale leads) */}
+      <div className="card p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Clock size={16} className="text-orange-400" />
+            Needs Follow-up
+          </h2>
+          <Link to="/leads" className="text-xs text-teal hover:underline">View all leads</Link>
+        </div>
+        {!staleLeads || staleLeads.length === 0 ? (
+          <Empty>All active leads contacted recently 🎉</Empty>
+        ) : (
+          <div className="space-y-2">
+            {staleLeads.map((l: any) => (
+              <Link
+                key={l.id}
+                to={`/leads/${l.id}`}
+                className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2.5 hover:bg-white/10 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{l.name}</div>
+                  {l.company && <div className="text-xs text-muted truncate">{l.company}</div>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={l.status} />
+                  <DaysBadge days={l.days_silent} />
+                  {l.value > 0 && (
+                    <span className="text-[10px] text-teal">LKR {Number(l.value).toLocaleString()}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

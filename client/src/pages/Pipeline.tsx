@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { api, Lead } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_ORDER, STATUS_STYLES } from '../lib/constants';
-import { Avatar, Pill } from '../components/ui';
+import { Avatar, Pill, DaysBadge } from '../components/ui';
 
 export default function Pipeline() {
   const toast = useToast();
@@ -142,8 +142,11 @@ function Card({ lead, dragging }: { lead: Lead; dragging?: boolean }) {
           <Phone size={12} /> {lead.phone1}
         </div>
       )}
-      <div className="flex items-center justify-between mt-2.5">
-        <Pill>{lead.industry}</Pill>
+      <div className="flex items-center justify-between mt-2.5 flex-wrap gap-1">
+        <div className="flex items-center gap-1">
+          <Pill>{lead.industry}</Pill>
+          {(lead.days_silent ?? 0) >= 7 && <DaysBadge days={lead.days_silent!} />}
+        </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted">
           {lead.assignee && <Avatar initials={lead.assignee.avatar_initials} color={lead.assignee.avatar_color} size={18} />}
           {format(new Date(lead.created_at + 'Z'), 'MMM d')}

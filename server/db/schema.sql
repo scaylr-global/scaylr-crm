@@ -71,3 +71,4 @@ CREATE INDEX IF NOT EXISTS idx_leads_assigned ON leads(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_calls_lead ON call_logs(lead_id);
 CREATE INDEX IF NOT EXISTS idx_followups_lead ON follow_ups(lead_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at);
+
