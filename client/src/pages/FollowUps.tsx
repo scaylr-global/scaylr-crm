@@ -34,13 +34,13 @@ export default function FollowUps() {
   }
 
   const now = new Date();
-  const overdue = items.filter((f) => new Date(f.scheduled_at) < now);
-  const upcoming = items.filter((f) => new Date(f.scheduled_at) >= now);
+  const overdue = items.filter((f) => new Date(f.scheduled_at + 'Z') < now);
+  const upcoming = items.filter((f) => new Date(f.scheduled_at + 'Z') >= now);
 
   // group upcoming by date
   const groups: Record<string, FollowUp[]> = {};
   upcoming.forEach((f) => {
-    const key = format(new Date(f.scheduled_at), 'EEEE, MMM d');
+    const key = format(new Date(f.scheduled_at + 'Z'), 'EEEE, MMM d');
     (groups[key] = groups[key] || []).push(f);
   });
 
@@ -118,7 +118,7 @@ function FollowCard({
         <div className="text-xs text-muted">{f.lead_company}</div>
         {f.note && <div className="text-sm mt-1.5">{f.note}</div>}
         <div className="text-xs text-muted mt-1.5">
-          {format(new Date(f.scheduled_at), 'MMM d, yyyy · h:mm a')}
+          {format(new Date(f.scheduled_at + 'Z'), 'MMM d, yyyy · h:mm a')}
           {f.assignee_name && ` · ${f.assignee_name}`}
         </div>
       </div>

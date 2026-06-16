@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { q1 } from '../db/index.js';
+import db from '../db/index.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
@@ -12,26 +12,20 @@ export function signToken(user) {
 }
 
 // Require a valid JWT. Attaches fresh user record to req.user.
-export async function requireAuth(req, res, next) {
+export function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
-  let payload;
   try {
-    payload = jwt.verify(token, JWT_SECRET);
-  } catch (e) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-  try {
-    const user = await q1(
-      'SELECT id, name, email, role, avatar_initials, avatar_color FROM users WHERE id = $1',
-      [payload.id]
-    );
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = db
+      .prepare('SELECT id, name, email, role, avatar_initials, avatar_color FROM users WHERE id = ?')
+      .get(payload.id);
     if (!user) return res.status(401).json({ error: 'User no longer exists' });
     req.user = user;
     next();
   } catch (e) {
-    next(e);
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 

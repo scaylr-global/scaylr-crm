@@ -1,12 +1,7 @@
 # Render.com Blueprint — deploys Scaylr CRM as a single web service.
-# The app data lives in an external free Postgres (e.g. Neon), so NO paid disk
-# is needed — this runs on Render's FREE plan.
+# SQLite data is persisted to a Render Disk (25 GB free on individual plan).
 #
-# After connecting this blueprint, set DATABASE_URL in the Render dashboard to
-# your Neon connection string (it is marked sync:false so it is not stored here).
-#
-# Note: the free web service sleeps after ~15 min of inactivity, so the first
-# request after idle takes ~30-50s to wake. Your data is always safe in Postgres.
+# Note: the free web service sleeps after ~15 min of inactivity.
 services:
   - type: web
     name: scaylr-crm
@@ -19,6 +14,12 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: JWT_SECRET
-        generateValue: true # Render generates a strong random secret
-      - key: DATABASE_URL
-        sync: false # paste your Neon connection string in the dashboard
+        generateValue: true
+      - key: DB_PATH
+        value: /data/scaylr.db
+      - key: ANTHROPIC_API_KEY
+        sync: false  # paste your API key in the Render dashboard
+    disk:
+      name: scaylr-data
+      mountPath: /data
+      sizeGB: 1

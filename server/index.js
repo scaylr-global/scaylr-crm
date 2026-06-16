@@ -18,9 +18,10 @@ import followupRoutes from './routes/followups.js';
 import targetRoutes from './routes/targets.js';
 import activityRoutes from './routes/activity.js';
 import dashboardRoutes from './routes/dashboard.js';
+import aiRoutes from './routes/ai.js';
 
-// Seed default data on first run (await so the DB is ready before serving)
-await seedIfEmpty();
+// Seed default data on first run
+seedIfEmpty();
 
 const app = express();
 app.use(cors());
@@ -36,6 +37,7 @@ app.use('/api/followups', followupRoutes);
 app.use('/api/targets', targetRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/ai', aiRoutes);
 
 // In production, serve the built React frontend from the same server so the
 // whole app lives on one origin (no Vite proxy needed). The client's /api

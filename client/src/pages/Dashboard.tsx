@@ -181,7 +181,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right text-xs text-muted shrink-0">
                     <div>{fmtDuration(c.duration_seconds)}</div>
-                    <div>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</div>
+                    <div>{formatDistanceToNow(new Date(c.created_at + 'Z'), { addSuffix: true })}</div>
                   </div>
                 </div>
               ))}

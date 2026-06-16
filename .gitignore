@@ -1,6 +1,5 @@
 node_modules/
 dist/
-pgdata/
 server/db/pgdata/
 *.db
 *.db-shm

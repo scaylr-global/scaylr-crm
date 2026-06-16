@@ -11,6 +11,10 @@ import {
   Pencil,
   Check,
   CalendarClock,
+  Sparkles,
+  Loader2,
+  ThumbsUp,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { api, Lead, CallLog, FollowUp, User } from '../lib/api';
@@ -20,6 +24,15 @@ import { OUTCOMES } from '../lib/constants';
 import { StatusBadge, OutcomeBadge, Pill, Avatar, Modal, Field, Empty } from '../components/ui';
 import LeadForm, { LeadFormValues } from '../components/LeadForm';
 
+// ── Types ──────────────────────────────────────────────────────────────────
+interface AiInsights {
+  score: 'Hot' | 'Warm' | 'Cold';
+  summary: string;
+  nextAction: string;
+  bestTimeToCall: string;
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -34,6 +47,10 @@ export default function LeadDetail() {
   const [showCall, setShowCall] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
 
+  // AI insights state
+  const [insights, setInsights] = useState<AiInsights | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+
   function loadAll() {
     api.get<Lead>(`/leads/${id}`).then(setLead);
     api.get<CallLog[]>(`/calls?lead_id=${id}`).then(setCalls);
@@ -43,6 +60,7 @@ export default function LeadDetail() {
   useEffect(() => {
     loadAll();
     api.get<User[]>('/users').then(setUsers);
+    setInsights(null);
     // eslint-disable-next-line
   }, [id]);
 
@@ -76,6 +94,19 @@ export default function LeadDetail() {
     await api.patch(`/followups/${fid}/done`);
     toast('Follow-up completed');
     loadAll();
+  }
+
+  async function fetchInsights() {
+    setInsightsLoading(true);
+    setInsights(null);
+    try {
+      const data = await api.post<AiInsights>('/ai/lead-insights', { lead_id: lead!.id });
+      setInsights(data);
+    } catch (e: any) {
+      toast(e.message || 'AI request failed', 'error');
+    } finally {
+      setInsightsLoading(false);
+    }
   }
 
   const pendingFu = followups.filter((f) => f.status === 'pending').length;
@@ -120,6 +151,7 @@ export default function LeadDetail() {
       <div className="grid grid-cols-3 gap-4">
         {/* Left: contact + AI */}
         <div className="space-y-4">
+          {/* Contact details */}
           <div className="card p-5">
             <h2 className="font-semibold mb-4">Contact Details</h2>
             <PhoneRow label="Contact No. 01" number={lead.phone1} color="#22c55e" />
@@ -128,14 +160,83 @@ export default function LeadDetail() {
               <Building2 size={15} /> {lead.company || '—'}
             </div>
             <div className="text-xs text-muted mt-4 space-y-1 border-t border-border pt-3">
-              <div>Added {format(new Date(lead.created_at), 'MMM d, yyyy')}</div>
+              <div>Added {format(new Date(lead.created_at + 'Z'), 'MMM d, yyyy')}</div>
               <div>
                 Last contact{' '}
                 {lead.last_contact_at
-                  ? format(new Date(lead.last_contact_at), 'MMM d, yyyy')
+                  ? format(new Date(lead.last_contact_at + 'Z'), 'MMM d, yyyy')
                   : 'never'}
               </div>
             </div>
+          </div>
+
+          {/* AI Insights */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Sparkles size={16} className="text-teal" />
+                AI Insights
+              </h2>
+              {insights && (
+                <button
+                  onClick={() => setInsights(null)}
+                  className="text-muted hover:text-white"
+                  title="Clear"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {!insights && !insightsLoading && (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted mb-3">
+                  Analyse this lead's call history and follow-ups with Claude.
+                </p>
+                <button onClick={fetchInsights} className="btn btn-teal w-full text-sm py-2">
+                  <Sparkles size={14} /> Get AI Insights
+                </button>
+              </div>
+            )}
+
+            {insightsLoading && (
+              <div className="flex flex-col items-center gap-2 py-6 text-muted">
+                <Loader2 size={22} className="animate-spin text-teal" />
+                <span className="text-xs">Analysing lead…</span>
+              </div>
+            )}
+
+            {insights && !insightsLoading && (
+              <div className="space-y-3 text-sm">
+                {/* Score badge */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted">Lead Score</span>
+                  <ScoreBadge score={insights.score} />
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Summary</p>
+                  <p className="text-sm leading-relaxed">{insights.summary}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Next Action</p>
+                  <p className="text-sm leading-relaxed text-teal">{insights.nextAction}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Best Time to Call</p>
+                  <p className="text-sm leading-relaxed">{insights.bestTimeToCall}</p>
+                </div>
+
+                <button
+                  onClick={fetchInsights}
+                  className="btn btn-ghost w-full text-xs py-1.5 mt-1"
+                >
+                  <Sparkles size={12} /> Refresh
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -162,7 +263,7 @@ export default function LeadDetail() {
                     <div className="flex-1 min-w-0">
                       {c.notes && <div className="text-sm">{c.notes}</div>}
                       <div className="text-xs text-muted mt-0.5">
-                        {fmtDur(c.duration_seconds)} · {format(new Date(c.created_at), 'MMM d, yyyy · h:mm a')}
+                        {fmtDur(c.duration_seconds)} · {format(new Date(c.created_at + 'Z'), 'MMM d, yyyy · h:mm a')}
                         {c.logger?.name && ` · ${c.logger.name}`}
                       </div>
                     </div>
@@ -202,7 +303,7 @@ export default function LeadDetail() {
                       <div className="flex-1">
                         <div className={`text-sm ${done ? 'line-through text-muted' : ''}`}>{f.note}</div>
                         <div className="text-xs text-muted mt-0.5">
-                          {format(new Date(f.scheduled_at), 'MMM d, yyyy · h:mm a')}
+                          {format(new Date(f.scheduled_at + 'Z'), 'MMM d, yyyy · h:mm a')}
                           {done && f.completed_at && ' · completed'}
                         </div>
                       </div>
@@ -249,6 +350,21 @@ export default function LeadDetail() {
   );
 }
 
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function ScoreBadge({ score }: { score: 'Hot' | 'Warm' | 'Cold' }) {
+  const map: Record<string, string> = {
+    Hot: 'bg-red-500/20 text-red-400 border border-red-500/30',
+    Warm: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+    Cold: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${map[score] || ''}`}>
+      {score === 'Hot' ? '🔥' : score === 'Warm' ? '☀️' : '❄️'} {score}
+    </span>
+  );
+}
+
 function PhoneRow({ label, number, color }: { label: string; number: string | null; color: string }) {
   const toast = useToast();
   if (!number) return null;
@@ -287,6 +403,7 @@ function PhoneRow({ label, number, color }: { label: string; number: string | nu
   );
 }
 
+// ── Log Call modal with "Improve with AI" ──────────────────────────────────
 function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [outcome, setOutcome] = useState('Interested');
@@ -295,6 +412,10 @@ function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: ()
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // AI note improvement
+  const [improving, setImproving] = useState(false);
+  const [improved, setImproved] = useState<string | null>(null);
+
   async function save() {
     setBusy(true);
     try {
@@ -302,7 +423,7 @@ function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: ()
         lead_id: leadId,
         outcome,
         duration_seconds: mins * 60 + secs,
-        notes,
+        notes: improved ?? notes,
       });
       toast('Call logged');
       onDone();
@@ -310,6 +431,32 @@ function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: ()
       toast(e.message, 'error');
       setBusy(false);
     }
+  }
+
+  async function improveWithAI() {
+    if (!notes.trim()) {
+      toast('Write a rough note first, then improve it', 'error');
+      return;
+    }
+    setImproving(true);
+    setImproved(null);
+    try {
+      const data = await api.post<{ improved: string }>('/ai/improve-note', { note: notes });
+      setImproved(data.improved);
+    } catch (e: any) {
+      toast(e.message || 'AI request failed', 'error');
+    } finally {
+      setImproving(false);
+    }
+  }
+
+  function acceptImproved() {
+    setNotes(improved!);
+    setImproved(null);
+  }
+
+  function dismissImproved() {
+    setImproved(null);
   }
 
   return (
@@ -335,11 +482,56 @@ function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: ()
           <span className="text-muted text-sm">sec</span>
         </div>
       </Field>
+
       <Field label="Notes">
-        <textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What happened on the call?" />
+        <textarea
+          rows={4}
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            if (improved) setImproved(null);
+          }}
+          placeholder="What happened on the call?"
+        />
       </Field>
 
-      <div className="flex justify-end gap-2 mt-5">
+      {/* Improve with AI button */}
+      {!improved && (
+        <button
+          onClick={improveWithAI}
+          disabled={improving || !notes.trim()}
+          className="flex items-center gap-1.5 text-xs text-teal hover:text-teal/80 disabled:opacity-40 disabled:cursor-not-allowed mb-1 -mt-1"
+        >
+          {improving ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          {improving ? 'Improving…' : 'Improve with AI'}
+        </button>
+      )}
+
+      {/* AI suggestion panel */}
+      {improved && (
+        <div className="rounded-lg border border-teal/30 bg-teal/5 p-3 mb-3 -mt-1 space-y-2">
+          <p className="text-xs font-medium text-teal flex items-center gap-1">
+            <Sparkles size={12} /> AI suggestion
+          </p>
+          <p className="text-sm leading-relaxed">{improved}</p>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={acceptImproved}
+              className="flex items-center gap-1 text-xs btn btn-teal py-1 px-2.5"
+            >
+              <ThumbsUp size={11} /> Accept
+            </button>
+            <button
+              onClick={dismissImproved}
+              className="flex items-center gap-1 text-xs btn btn-ghost py-1 px-2.5"
+            >
+              <X size={11} /> Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 mt-4">
         <button onClick={onClose} className="btn btn-ghost">
           Cancel
         </button>
@@ -351,6 +543,7 @@ function LogCallModal({ leadId, onClose, onDone }: { leadId: number; onClose: ()
   );
 }
 
+// ── Schedule Follow-up modal ───────────────────────────────────────────────
 function ScheduleModal({ leadId, onClose, onDone }: { leadId: number; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const today = new Date().toISOString().slice(0, 10);
@@ -363,9 +556,9 @@ function ScheduleModal({ leadId, onClose, onDone }: { leadId: number; onClose: (
     if (!date || !time) return toast('Pick a date and time', 'error');
     setBusy(true);
     try {
-      // Send a full ISO-8601 instant (UTC, with Z) so Postgres stores the exact
-      // moment unambiguously and overdue comparisons stay correct.
-      const utc = new Date(`${date}T${time}:00`).toISOString();
+      // Convert local wall-clock to UTC "YYYY-MM-DD HH:MM:SS" so the server's
+      // datetime('now') (UTC) overdue comparison is consistent with display.
+      const utc = new Date(`${date}T${time}:00`).toISOString().slice(0, 19).replace('T', ' ');
       await api.post('/followups', {
         lead_id: leadId,
         scheduled_at: utc,
