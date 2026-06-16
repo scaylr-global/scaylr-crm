@@ -12,6 +12,7 @@
     "@dnd-kit/core": "^6.1.0",
     "@fontsource/inter": "^5.2.8",
     "@radix-ui/react-dialog": "^1.1.17",
+    "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.445.0",

@@ -15,28 +15,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
+    // Restore session from localStorage (no server round-trip needed)
+    const stored = getToken();
+    if (stored) {
+      try { setUser(JSON.parse(stored)); } catch { clearToken(); }
     }
-    api
-      .get<{ user: User }>('/auth/me')
-      .then((r) => setUser(r.user))
-      .catch(() => clearToken())
-      .finally(() => setLoading(false));
+    setLoading(false);
   }, []);
 
   async function login(email: string, password: string) {
     const r = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
-    setToken(r.token);
+    setToken(JSON.stringify(r.user));
     setUser(r.user);
   }
 
   function logout() {
     clearToken();
     setUser(null);
-    window.location.href = '/login';
+    window.location.hash = '/login';
   }
 
   return <Ctx.Provider value={{ user, loading, login, logout }}>{children}</Ctx.Provider>;
