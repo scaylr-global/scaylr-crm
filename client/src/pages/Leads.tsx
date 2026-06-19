@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Upload, Search, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
+import { toDate } from '../lib/utils';
 import { api, Lead, User } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -247,7 +248,7 @@ export default function Leads() {
                     )}
                   </td>
                   <td className="py-3 pr-4 text-right text-xs tabular whitespace-nowrap" style={{ color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
-                    {format(new Date(l.created_at + 'Z'), 'MMM d')}
+                    {format(toDate(l.created_at), 'MMM d')}
                   </td>
                 </tr>
               ))}

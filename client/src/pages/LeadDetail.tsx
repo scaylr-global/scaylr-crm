@@ -20,6 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { toDate } from '../lib/utils';
 import { api, Lead, CallLog, FollowUp, User, CallPrep, Intel } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -361,7 +362,7 @@ function CallPrepTab({ callPrep, lead, onLog, compact }: { callPrep: CallPrep | 
             <p className="text-sm leading-relaxed">{callPrep.lastInteraction.notes}</p>
           )}
           <p className="text-xs text-muted mt-2">
-            {format(new Date(callPrep.lastInteraction.date + 'Z'), 'MMM d, yyyy · h:mm a')}
+            {format(toDate(callPrep.lastInteraction.date), 'MMM d, yyyy · h:mm a')}
           </p>
         </div>
       )}
@@ -424,7 +425,7 @@ function ActivityTab({ calls, onDelete }: { calls: CallLog[]; onDelete: (id: num
             )}
             <div className="flex-1 min-w-0">
               <div className="text-xs text-muted mb-1.5">
-                {format(new Date(c.created_at + 'Z'), 'MMM d, yyyy · h:mm a')}
+                {format(toDate(c.created_at), 'MMM d, yyyy · h:mm a')}
                 {c.logger?.name && ` · ${c.logger.name}`}
                 {c.duration_seconds > 0 && ` · ${fmtDur(c.duration_seconds)}`}
               </div>
@@ -502,7 +503,7 @@ function FollowUpsTab({
                 <div className="flex-1">
                   <div className={`text-sm ${done ? 'line-through text-muted' : ''}`}>{f.note}</div>
                   <div className="text-xs text-muted mt-0.5">
-                    {format(new Date(f.scheduled_at + 'Z'), 'MMM d, yyyy · h:mm a')}
+                    {format(toDate(f.scheduled_at), 'MMM d, yyyy · h:mm a')}
                     {done && ' · completed'}
                   </div>
                 </div>
@@ -544,7 +545,7 @@ function IntelTab({ intel, compact }: { intel: Intel | null; compact?: boolean }
               <div key={i} className="bg-white/5 rounded-lg p-2.5 text-sm">
                 <p className="leading-relaxed">{p.text}</p>
                 <p className="text-xs text-muted mt-1">
-                  {format(new Date(p.date + 'Z'), 'MMM d')}
+                  {format(toDate(p.date), 'MMM d')}
                   {p.type && ` · ${p.type}`}
                 </p>
               </div>
@@ -566,7 +567,7 @@ function IntelTab({ intel, compact }: { intel: Intel | null; compact?: boolean }
               <div key={i} className="bg-white/5 rounded-lg p-2.5 text-sm">
                 <p className="leading-relaxed">{o.text}</p>
                 <p className="text-xs text-muted mt-1">
-                  {format(new Date(o.date + 'Z'), 'MMM d')}
+                  {format(toDate(o.date), 'MMM d')}
                   {o.type && ` · ${o.type}`}
                 </p>
               </div>
@@ -585,7 +586,7 @@ function IntelTab({ intel, compact }: { intel: Intel | null; compact?: boolean }
             {intel.allNextSteps.map((n, i) => (
               <div key={i} className="bg-white/5 rounded-lg p-2.5 text-sm">
                 <p className="leading-relaxed">{n.text}</p>
-                <p className="text-xs text-muted mt-1">{format(new Date(n.date + 'Z'), 'MMM d')}</p>
+                <p className="text-xs text-muted mt-1">{format(toDate(n.date), 'MMM d')}</p>
               </div>
             ))}
           </div>
@@ -601,7 +602,7 @@ function IntelTab({ intel, compact }: { intel: Intel | null; compact?: boolean }
           {intel.outcomeHistory.map((o, i) => (
             <div key={i} className="flex items-center gap-2">
               <OutcomeBadge outcome={o.outcome} />
-              <span className="text-xs text-muted">{format(new Date(o.date + 'Z'), 'MMM d')}</span>
+              <span className="text-xs text-muted">{format(toDate(o.date), 'MMM d')}</span>
               {o.type && <span className="text-xs text-muted">· {o.type}</span>}
             </div>
           ))}

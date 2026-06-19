@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { Users, TrendingUp, PhoneCall, AlertTriangle, Clock } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { toDate } from '../lib/utils';
 import { api } from '../lib/api';
 import { OUTCOME_STYLES } from '../lib/constants';
 import { StatCard, OutcomeBadge, Avatar, Empty, DaysBadge, StatusBadge } from '../components/ui';
@@ -217,7 +218,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right text-xs text-muted shrink-0">
                     <div>{fmtDuration(c.duration_seconds)}</div>
-                    <div>{formatDistanceToNow(new Date(c.created_at + 'Z'), { addSuffix: true })}</div>
+                    <div>{formatDistanceToNow(toDate(c.created_at), { addSuffix: true })}</div>
                   </div>
                 </div>
               ))}

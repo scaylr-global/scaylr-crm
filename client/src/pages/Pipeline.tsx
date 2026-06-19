@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { Building2, Phone } from 'lucide-react';
 import { format } from 'date-fns';
+import { toDate } from '../lib/utils';
 import { api, Lead } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_ORDER, STATUS_STYLES } from '../lib/constants';
@@ -149,7 +150,7 @@ function Card({ lead, dragging }: { lead: Lead; dragging?: boolean }) {
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted">
           {lead.assignee && <Avatar initials={lead.assignee.avatar_initials} color={lead.assignee.avatar_color} size={18} />}
-          {format(new Date(lead.created_at + 'Z'), 'MMM d')}
+          {format(toDate(lead.created_at), 'MMM d')}
         </div>
       </div>
     </div>
