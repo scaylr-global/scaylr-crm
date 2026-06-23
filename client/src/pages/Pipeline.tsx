@@ -129,7 +129,7 @@ function Card({ lead, dragging }: { lead: Lead; dragging?: boolean }) {
   return (
     <div
       className={`bg-[#15151f] border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing ${
-        dragging ? 'shadow-2xl rotate-2' : 'hover:border-teal/40'
+        dragging ? 'shadow-2xl rotate-2' : 'lift-hover hover:border-teal/40'
       }`}
     >
       <div className="font-medium text-sm">{lead.name}</div>

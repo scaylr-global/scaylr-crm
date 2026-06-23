@@ -149,7 +149,7 @@ export default function Dashboard() {
               <Link
                 key={l.id}
                 to={`/leads/${l.id}`}
-                className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2.5 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2.5 hover:bg-white/10 transition-colors lift-hover"
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{l.name}</div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
                 <Link
                   to={`/leads/${f.lead_id}`}
                   key={f.id}
-                  className="block border-l-2 border-red-500 bg-white/5 rounded-r-lg px-3 py-2 hover:bg-white/10"
+                  className="block border-l-2 border-red-500 bg-white/5 rounded-r-lg px-3 py-2 hover:bg-white/10 lift-hover"
                 >
                   <div className="flex justify-between items-start">
                     <div>

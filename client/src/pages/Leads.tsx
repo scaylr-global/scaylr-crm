@@ -192,7 +192,7 @@ export default function Leads() {
                 <tr
                   key={l.id}
                   onClick={() => openDrawer(l.id)}
-                  className="group cursor-pointer transition-colors duration-fast"
+                  className="group cursor-pointer transition-colors duration-fast row-hover"
                   style={{
                     borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                     background: drawerLeadId === l.id ? 'var(--surface-2)' : undefined,
