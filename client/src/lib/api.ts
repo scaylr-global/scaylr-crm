@@ -304,22 +304,31 @@ async function handleGet<T>(path: string): Promise<T> {
     const today = new Date().toISOString().slice(0, 10);
     const [
       { data: leads },
+      { data: allCalls },
       { data: recentCalls },
       { data: overdue },
+      { data: users },
+      { data: tgts },
+      { data: todayCalls },
     ] = await Promise.all([
-      sb.from('leads').select('id, status, value, assigned_to, created_at, call_logs(created_at)'),
-      sb.from('call_logs').select('id, outcome, created_at, notes, lead:leads(name), logger:users!call_logs_logged_by_fkey(name)').order('created_at', { ascending: false }).limit(10),
-      sb.from('follow_ups').select('id, scheduled_at, note, lead:leads(id, name, status)').eq('status', 'pending').lte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(5),
+      sb.from('leads').select('id, name, company, status, value, assigned_to, created_at, call_logs(created_at)'),
+      sb.from('call_logs').select('id, outcome, created_at'),
+      sb.from('call_logs').select('id, outcome, duration_seconds, created_at, notes, lead:leads(name), logger:users!call_logs_logged_by_fkey(name)').order('created_at', { ascending: false }).limit(10),
+      sb.from('follow_ups').select('id, scheduled_at, note, lead:leads(id, name, company, status)').eq('status', 'pending').lte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(5),
+      sb.from('users').select('*').order('name'),
+      sb.from('targets').select('*'),
+      sb.from('call_logs').select('logged_by')
+        .gte('created_at', today + 'T00:00:00.000Z')
+        .lte('created_at', today + 'T23:59:59.999Z'),
     ]);
 
     const total = leads?.length ?? 0;
-    const active = (leads ?? []).filter(l => l.status !== 'Closed' && l.status !== 'Lost').length;
     const won = (leads ?? []).filter(l => l.status === 'Closed').length;
-    const callsToday = (recentCalls ?? []).filter(c => c.created_at.startsWith(today)).length;
+    const overdueList = overdue ?? [];
 
     const outcomeCounts: Record<string, number> = {};
-    (recentCalls ?? []).forEach(c => { outcomeCounts[c.outcome] = (outcomeCounts[c.outcome] ?? 0) + 1; });
-    const outcomes = Object.entries(outcomeCounts).map(([name, value]) => ({ name, value }));
+    (allCalls ?? []).forEach(c => { outcomeCounts[c.outcome] = (outcomeCounts[c.outcome] ?? 0) + 1; });
+    const outcomes = Object.entries(outcomeCounts).map(([outcome, count]) => ({ outcome, count }));
 
     // Stale leads (computed from embedded call_logs)
     const enriched = ((leads ?? []) as any[]).map(l => {
@@ -334,11 +343,29 @@ async function handleGet<T>(path: string): Promise<T> {
       .sort((a: any, b: any) => b.days_silent - a.days_silent)
       .slice(0, 5);
 
+    const team = (users ?? []).map(u => ({
+      id: u.id, name: u.name, role: u.role,
+      avatar_initials: u.avatar_initials, avatar_color: u.avatar_color,
+      daily_target: (tgts ?? []).find((t: any) => t.user_id === u.id)?.daily_target ?? 10,
+      calls_today: (todayCalls ?? []).filter((c: any) => c.logged_by === u.id).length,
+    }));
+
     return {
-      stats: { total, active, won, callsToday },
+      stats: {
+        totalLeads: total,
+        conversionRate: total ? Math.round((won / total) * 100) : 0,
+        totalCalls: allCalls?.length ?? 0,
+        overdue: overdueList.length,
+      },
       outcomes,
-      team: [],
-      overdueList: (overdue ?? []).map(f => ({ ...f, lead_name: (f.lead as any)?.name, lead_status: (f.lead as any)?.status })),
+      team,
+      overdueList: overdueList.map(f => ({
+        ...f,
+        lead_id: (f.lead as any)?.id,
+        lead_name: (f.lead as any)?.name,
+        lead_company: (f.lead as any)?.company,
+        lead_status: (f.lead as any)?.status,
+      })),
       recentCalls: (recentCalls ?? []).map(c => ({ ...c, lead_name: (c.lead as any)?.name, logger_name: (c.logger as any)?.name })),
       staleLeads,
     } as any;
